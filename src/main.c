@@ -1,20 +1,14 @@
 // 8 Найти и вывести все файлы имя которых начинается с указанной буквы
 
-#include "ListLib.h"
+#include "ListLib.h"	//Включает malloc.h, stdint.h, string.h, список ошибок
 #include <dirent.h>
-#include <malloc.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 #ifdef WIN32
-#define SEP "\\"
+#define SEP "\\"	//Разделитель между папок для Windows
 #else
-#define SEP "/"
+#define SEP "/"		//Разделитель между папок для Unix
 #endif /* ifdef WIN32 */
-
-int PrintFileLocations(char const *StartDir, char const DesiredChar, TextList **FileList);
-int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar, TextList **FileList);
 
 uint16_t PrintAndCountList(TextList *list);
 uint8_t ScanDirectory(DIR *dir, TextList **DirList, TextList **FileList, char const DesiredChar);
@@ -22,50 +16,41 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **FileL
 
 int main(int argc, const char *argv[])
 {
+	uint32_t //Счетчик элементов
+		count;
 	TextList // Список файлов
 		*FileList = NULL;
 
 	// Если было переданно недостаточно аргументов, работу можно сразу прекратить
 	if (argc < 3)
 	{
-		fprintf(stderr, "Укажите, файлы с какого символа и в какой папке вы хотите искать!\n");
+		puts("Укажите, файлы с какого символа и в какой папке вы хотите искать!");
 		return ERR_BADCALL;
 	}
 
-	char DesChar = argv[1][0]; // Искомый символ
-
-	/*Запуск функции поиска, возвращающий число найденых элементов*/
-	uint8_t errCode = FindFiles(argv[2], DesChar, &FileList);
+	/*Запуск функции поиска, возврат кода ошибки*/
+	uint8_t errCode = FindFiles(argv[2], argv[1][0], &FileList);
 	switch (errCode)
 	{
 	case ERR_BADDIR:
 		puts("Ошибка папки");
-		RemoveList(FileList);
-		return ERR_BADDIR;
-
+		break;
 	case ERR_MALLOC:
 		puts("Ошибка памяти");
-		RemoveList(FileList);
-		return ERR_MALLOC;
-
-	default:
+		break;
+	case ERR_NO:
+		count = PrintAndCountList(FileList);
+		if (count)
+			printf("Найдено %d файлов, начинающихся с %c\n", count, argv[1][0]);
+		else
+			printf("Файлов, начинающихся с %c не найдено!\n", argv[1][0]);
 		break;
 	}
-	// PrintFileLocations(argv[2], DesChar, &FileList);
-
-	int count = PrintAndCountList(FileList);
-
-	if (count)
-	{
-		printf("Найдено %d файлов, начинающихся с %c\n", count, DesChar);
-	}
-	else
-		printf("Файлов, начинающихся с %c не найдено!\n", DesChar);
-
-	RemoveList(FileList);
-	return ERR_NO;
+	RemoveList(FileList);	//Очистка списка файлов
+	return errCode;
 }
 
+//Функция считает число элементов в списке list, выводит их
 uint16_t PrintAndCountList(TextList *list)
 {
 	uint16_t count = 0;
@@ -81,17 +66,16 @@ uint16_t PrintAndCountList(TextList *list)
 	return count;
 }
 
-uint8_t ScanDirectory(DIR *curDir, TextList **DirList, TextList **FileList, char const DesiredChar)
+/*Функция сканирует папку curDir на предмет файлов, начинающихся с DesiredChar, 
+ * сохраняет их по указателю pFileList на список файлов, сохраняет новые папки по указателю pDirList на список*/
+uint8_t ScanDirectory(DIR *curDir, TextList **pDirList, TextList **pFileList, char const DesiredChar)
 {
 	//Сохранение названия текущей папки и удаление её из списка
-	int len = strlen((*DirList)->text);
-	int mem = sizeof(char) * (len + 1);
-	char *curDirName = (char *) malloc(mem);
+	char *curDirName = (char *) malloc(sizeof(char) * (1 + strlen((*pDirList)->text)));
 	if (!curDirName)
 		return ERR_MALLOC;
-
-	strcpy(curDirName,(*DirList)->text); 
-	RemoveTopElement(DirList);			 
+	strcpy(curDirName,(*pDirList)->text); 
+	RemoveTopElement(pDirList);			 
 
 	struct dirent *ep;
 	// Пока папка содержит элементы
@@ -101,10 +85,10 @@ uint8_t ScanDirectory(DIR *curDir, TextList **DirList, TextList **FileList, char
 		if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0)
 			continue;
 
-		// Выделение памяти под путь к очередному файлу, проверка
+		// Выделение памяти под путь к очередному файлу (путь к текущей папке + имя файла + разделитель и 0 в конце)
 		char *newDir = (char *)malloc(sizeof(char) * (strlen(curDirName) + strlen(ep->d_name) + 2));
 		if (!newDir)
-		{
+		{	//Проверка
 			free(curDirName);
 			return ERR_MALLOC;
 		}
@@ -114,12 +98,12 @@ uint8_t ScanDirectory(DIR *curDir, TextList **DirList, TextList **FileList, char
 		strcat(newDir, SEP);
 		strcat(newDir, ep->d_name);
 
-		// Проверка каждого элемента из папки и, если его первый символ
-		// совпал с DesiredChar, при этом элемент не является другой папкой
-		// осуществляется сохранение его пути
+		/*	Проверка каждого элемента из папки и, если его первый символ
+			совпал с DesiredChar, при этом элемент не является другой папкой
+			осуществляется сохранение его пути */
 		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
 		{
-			uint8_t err = PushElement(FileList, newDir);
+			uint8_t err = PushElement(pFileList, newDir);
 			free(newDir);
 			if (err) // Если не удалось выделить память под элемент, прекращение работы
 			{
@@ -132,7 +116,7 @@ uint8_t ScanDirectory(DIR *curDir, TextList **DirList, TextList **FileList, char
 		// Если новый элемент папки сам является таковой, его имя сохраняется в список
 		if (DT_DIR == ep->d_type)
 		{
-			uint8_t err = PushElement(DirList, newDir);
+			uint8_t err = PushElement(pDirList, newDir);
 			free(newDir);
 			if (err) // Если не удалось выделить память под элемент, прекращение работы
 			{
@@ -147,8 +131,9 @@ uint8_t ScanDirectory(DIR *curDir, TextList **DirList, TextList **FileList, char
 	return ERR_NO;
 }
 
-/*Функция ищет в файлы, начинающиеся с DesiredChar, в папке с названием StartDir*/
-uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **FileList)
+/*Функция ищет файлы, начинающиеся с DesiredChar, 
+ * в папке с названием StartDir, сохраняет их по указателю FileList*/
+uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **pFileList)
 {
 	TextList // Список папок
 		*DirList = NULL;
@@ -164,7 +149,7 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **FileL
 			RemoveList(DirList);
 			return ERR_BADDIR;
 		}
-		uint8_t err = ScanDirectory(curDir, &DirList, FileList, DesiredChar);
+		uint8_t err = ScanDirectory(curDir, &DirList, pFileList, DesiredChar);
 		closedir(curDir);
 
 		if (err)
@@ -175,51 +160,4 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **FileL
 	}
 	RemoveList(DirList);
 	return ERR_NO;
-}
-
-/*Функция ищет в файлы, начинающиеся с DesiredChar, в папке с названием StartDir*/
-int PrintFileLocations(char const *StartDir, char const DesiredChar, TextList **FileList)
-{
-	// Запуск внутренней функции со счётчиком
-	return InnerPrintFileLocations(0, StartDir, DesiredChar, FileList);
-}
-
-int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar, TextList **FileList)
-{
-	DIR *dp = opendir(StartDir);
-	// Граничное условие: если StartDir это не папка,
-	// то нет в ней файлов на DesiredChar
-	if (!dp)
-		return count;
-
-	struct dirent *ep;
-	// Цикл перебирает элементы данной папки
-	while ((ep = readdir(dp)))
-	{
-		// Если у элемента название .. или . , то он игнорируется
-		if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0)
-			continue;
-
-		// Выделение памяти под путь к очередному файлу, сохранение его имени
-		char *newDir = (char *)malloc(sizeof(char) * (strlen(StartDir) + strlen(ep->d_name) + 2));
-		strcpy(newDir, StartDir);
-		strcat(newDir, SEP);
-		strcat(newDir, ep->d_name);
-
-		// Проверка каждого элемента из папки и, если его первый символ
-		// совпал с DesiredChar, при этом элемент не является другой папкой
-		// - сохранение его пути и увеличение счётчика
-		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
-		{
-			PushElement(FileList, newDir);
-			count++;
-			continue;
-		}
-
-		// Открытие очередного файла
-		count = InnerPrintFileLocations(count, newDir, DesiredChar, FileList);
-		free(newDir); // Освобождение памяти с названием файла
-	}
-	closedir(dp); // закрытие папки
-	return count; // Возврат числа элементов
 }
