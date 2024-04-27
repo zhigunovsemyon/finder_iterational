@@ -70,6 +70,7 @@ uint16_t PrintAndCountList(TextList *list)
  * сохраняет их по указателю pFileList на список файлов, сохраняет новые папки по указателю pDirList на список*/
 uint8_t ScanDirectory(DIR *curDir, TextList **pDirList, TextList **pFileList, char const DesiredChar)
 {
+	uint8_t err;
 	//Сохранение названия текущей папки и удаление её из списка
 	char *curDirName = (char *) malloc(sizeof(char) * (1 + strlen((*pDirList)->text)));
 	if (!curDirName)
@@ -89,8 +90,8 @@ uint8_t ScanDirectory(DIR *curDir, TextList **pDirList, TextList **pFileList, ch
 		char *newDir = (char *)malloc(sizeof(char) * (strlen(curDirName) + strlen(ep->d_name) + 2));
 		if (!newDir)
 		{	//Проверка
-			free(curDirName);
-			return ERR_MALLOC;
+			err = ERR_MALLOC;
+			break;
 		}
 
 		// Сохранение полного пути к файлу
@@ -103,38 +104,33 @@ uint8_t ScanDirectory(DIR *curDir, TextList **pDirList, TextList **pFileList, ch
 			осуществляется сохранение его пути */
 		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
 		{
-			uint8_t err = PushElement(pFileList, newDir);
+			err = PushElement(pFileList, newDir);
 			free(newDir);
 			if (err) // Если не удалось выделить память под элемент, прекращение работы
-			{
-				free(curDirName);
-				return ERR_MALLOC;
-			}
+				break;
 			continue;
 		}
 
 		// Если новый элемент папки сам является таковой, его имя сохраняется в список
 		if (DT_DIR == ep->d_type)
 		{
-			uint8_t err = PushElement(pDirList, newDir);
+			err = PushElement(pDirList, newDir);
 			free(newDir);
 			if (err) // Если не удалось выделить память под элемент, прекращение работы
-			{
-				free(curDirName);
-				return ERR_MALLOC;
-			}
+				break;
 			continue;
 		}
 		free(newDir);
 	}
 	free(curDirName);
-	return ERR_NO;
+	return err;
 }
 
 /*Функция ищет файлы, начинающиеся с DesiredChar, 
  * в папке с названием StartDir, сохраняет их по указателю FileList*/
 uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **pFileList)
 {
+	uint8_t err;
 	TextList // Список папок
 		*DirList = NULL;
 	if (PushElement(&DirList, StartDir))
@@ -146,18 +142,15 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **pFile
 		DIR *curDir = opendir(DirList->text);
 		if (!curDir)
 		{
-			RemoveList(&DirList);
-			return ERR_BADDIR;
+			err = ERR_BADDIR;
+			break;
 		}
-		uint8_t err = ScanDirectory(curDir, &DirList, pFileList, DesiredChar);
+		err = ScanDirectory(curDir, &DirList, pFileList, DesiredChar);
 		closedir(curDir);
 
 		if (err)
-		{ // Если не удалось выделить память, возрат ошибки
-			RemoveList(&DirList);
-			return ERR_MALLOC;
-		}
+			break;	// Если не удалось выделить память, возрат ошибки
 	}
 	RemoveList(&DirList);
-	return ERR_NO;
+	return err;
 }

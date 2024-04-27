@@ -4,7 +4,7 @@ uint8_t PushElement(TextList **list, const char *text)
 {
 	//Выделение памяти под новый элемент, проверка, удалось ли
 	TextList *new = (TextList *)malloc(sizeof(TextList) + sizeof(char) * (1 + strlen(text)));
-	if (!new)
+	if (!new)	//Проверка malloc
 		return ERR_MALLOC;
 
 	new->next = *list;				//Сохранение адреса старого элемента в буфер
