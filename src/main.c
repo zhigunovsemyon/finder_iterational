@@ -13,9 +13,9 @@
 #define SEP "/"
 #endif /* ifdef WIN32 */
 
-int PrintFileLocations(char const *StartDir, char const DesiredChar);
-int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar);
-void PrintList(TextList *list);
+int PrintFileLocations(char const *StartDir, char const DesiredChar, TextList **FileList);
+int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar, TextList **FileList);
+uint16_t PrintAndCountList(TextList *list);
 
 
 // int main(void)
@@ -38,9 +38,10 @@ void PrintList(TextList *list);
 // 	return ERR_NO;
 // }
 
-TextList *badgloballist = NULL;
 int main(int argc, const char *argv[])
 {
+	TextList //Список файлов
+	*FileList = NULL;
 	
 	// Если было переданно недостаточно аргументов, работу можно сразу прекратить
 	if (argc < 3)
@@ -52,46 +53,60 @@ int main(int argc, const char *argv[])
 	char DesChar = argv[1][0]; // Искомый символ
 
 	/*Запуск функции поиска, возвращающий число найденых элементов*/
-	int count = PrintFileLocations(argv[2], DesChar);
+	PrintFileLocations(argv[2], DesChar, &FileList);
+	int count = PrintAndCountList(FileList);
 
 	if (count)
 	{
-		PrintList(badgloballist);
 		printf("Найдено %d файлов, начинающихся с %c\n", count, DesChar);
 	}
 	else
 		printf("Файлов, начинающихся с %c не найдено!\n", DesChar);
 
-	RemoveList(badgloballist);
+	RemoveList(FileList);
 	return ERR_NO;
 }
 
-void PrintList(TextList *list)
+uint16_t PrintAndCountList(TextList *list)
 {
+	uint16_t count = 0;
 	if (list)	//Вывод осуществляется только если список существует
 	{
 		do
+		{
 			printf("%s\n", list->text);	//Вывод текущей строки
+			count++;
+		}
 		while ((list = list->next));	//Переключение на новую строку	
 		//Если следующей строкой оказался NULL, цикл завершается
 	}
+	return count;
 }
-//void FindFiles(struct FileList* Folders, struct FileList* Files, char const* StartDir, char const DesiredChar)
-//{
-//	while ()
-//	{
-//		DIR *folder = opendir(S)
-//	}
-//}
 
 /*Функция ищет в файлы, начинающиеся с DesiredChar, в папке с названием StartDir*/
-int PrintFileLocations(char const *StartDir, char const DesiredChar)
+uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **FileList)
 {
-	// Запуск внутренней функции со счётчиком
-	return InnerPrintFileLocations(0, StartDir, DesiredChar);
+	TextList //Список папок
+	*DirList = NULL;
+	if(PushElement(&DirList, StartDir))
+		return ERR_MALLOC;
+
+	while(DirList->text)	//Пока есть элементы в списке папок
+	{
+		// DIR *curDir = opendir(const char *name);
+			
+	}
+	return ERR_NO;
 }
 
-int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar)
+/*Функция ищет в файлы, начинающиеся с DesiredChar, в папке с названием StartDir*/
+int PrintFileLocations(char const *StartDir, char const DesiredChar, TextList **FileList)
+{
+	// Запуск внутренней функции со счётчиком
+	return InnerPrintFileLocations(0, StartDir, DesiredChar, FileList);
+}
+
+int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar, TextList **FileList)
 {
 	DIR *dp = opendir(StartDir);
 	// Граничное условие: если StartDir это не папка,
@@ -118,13 +133,13 @@ int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredC
 		// - сохранение его пути и увеличение счётчика
 		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
 		{
-			PushElement(&badgloballist, newDir);
+			PushElement(FileList, newDir);
 			count++;
 			continue;
 		}
 
 		// Открытие очередного файла
-		count = InnerPrintFileLocations(count, newDir, DesiredChar);
+		count = InnerPrintFileLocations(count, newDir, DesiredChar, FileList);
 		free(newDir); // Освобождение памяти с названием файла
 	}
 	closedir(dp); // закрытие папки
