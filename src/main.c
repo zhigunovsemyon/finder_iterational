@@ -84,7 +84,9 @@ uint16_t PrintAndCountList(TextList *list)
 uint8_t ScanDirectory(DIR *curDir, TextList **DirList, TextList **FileList, char const DesiredChar)
 {
 	//Сохранение названия текущей папки и удаление её из списка
-	char *curDirName = (char *) malloc(strlen((*DirList)->text + 1) * sizeof(char));
+	int len = strlen((*DirList)->text);
+	int mem = sizeof(char) * (len + 1);
+	char *curDirName = (char *) malloc(mem);
 	if (!curDirName)
 		return ERR_MALLOC;
 
@@ -153,7 +155,7 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **FileL
 	if (PushElement(&DirList, StartDir))
 		return ERR_MALLOC;
 
-	while (DirList->text) // Пока есть элементы в списке папок
+	while (DirList) // Пока есть элементы в списке папок
 	{
 		// Открытие очередной папки, проверка
 		DIR *curDir = opendir(DirList->text);
