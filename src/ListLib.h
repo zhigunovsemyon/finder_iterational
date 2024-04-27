@@ -22,7 +22,7 @@ struct TextList
 uint8_t PushElement(TextList **list, const char *text);
 
 //Вывод всего списка list без разделителей между элементами
-void PrintList(TextList *list);
+// void PrintList(TextList *list);
 
 //Удаление верхнего элемента по адресу указателя на список list
 void RemoveTopElement(TextList **list);

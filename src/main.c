@@ -15,6 +15,7 @@
 
 int PrintFileLocations(char const *StartDir, char const DesiredChar);
 int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar);
+void PrintList(TextList *list);
 
 
 // int main(void)
@@ -36,6 +37,8 @@ int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredC
 // 	RemoveList(kek);
 // 	return ERR_NO;
 // }
+
+TextList *badgloballist = NULL;
 int main(int argc, const char *argv[])
 {
 	
@@ -52,13 +55,27 @@ int main(int argc, const char *argv[])
 	int count = PrintFileLocations(argv[2], DesChar);
 
 	if (count)
+	{
+		PrintList(badgloballist);
 		printf("Найдено %d файлов, начинающихся с %c\n", count, DesChar);
+	}
 	else
 		printf("Файлов, начинающихся с %c не найдено!\n", DesChar);
 
+	RemoveList(badgloballist);
 	return ERR_NO;
 }
 
+void PrintList(TextList *list)
+{
+	if (list)	//Вывод осуществляется только если список существует
+	{
+		do
+			printf("%s\n", list->text);	//Вывод текущей строки
+		while ((list = list->next));	//Переключение на новую строку	
+		//Если следующей строкой оказался NULL, цикл завершается
+	}
+}
 //void FindFiles(struct FileList* Folders, struct FileList* Files, char const* StartDir, char const DesiredChar)
 //{
 //	while ()
@@ -72,8 +89,6 @@ int PrintFileLocations(char const *StartDir, char const DesiredChar)
 {
 	// Запуск внутренней функции со счётчиком
 	return InnerPrintFileLocations(0, StartDir, DesiredChar);
-
-
 }
 
 int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar)
@@ -100,10 +115,10 @@ int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredC
 
 		// Проверка каждого элемента из папки и, если его первый символ
 		// совпал с DesiredChar, при этом элемент не является другой папкой
-		// - вывод его пути и увеличение счётчика
+		// - сохранение его пути и увеличение счётчика
 		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
 		{
-			printf("%s\n", newDir);
+			PushElement(&badgloballist, newDir);
 			count++;
 			continue;
 		}

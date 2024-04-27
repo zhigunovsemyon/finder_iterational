@@ -3,7 +3,7 @@
 uint8_t PushElement(TextList **list, const char *text)
 {
 	//Выделение памяти под новый элемент, проверка, удалось ли
-	TextList *new = (TextList *)malloc(sizeof(TextList) + sizeof(char) * strlen(text));
+	TextList *new = (TextList *)malloc(sizeof(TextList) + sizeof(char) * (1 + strlen(text)));
 	if (!new)
 		return ERR_MALLOC;
 
@@ -15,17 +15,17 @@ uint8_t PushElement(TextList **list, const char *text)
 	return ERR_NO;
 }
 
-void PrintList(TextList *list)
-{
-	if (list)	//Вывод осуществляется только если список существует
-	{
-		do
-			printf("%s", list->text);	//Вывод текущей строки
-		while ((list = list->next));	//Переключение на новую строку	
-		//Если следующей строкой оказался NULL, цикл завершается
-	}
-	putchar('\n');
-}
+// void PrintList(TextList *list)
+// {
+// 	if (list)	//Вывод осуществляется только если список существует
+// 	{
+// 		do
+// 			printf("%s", list->text);	//Вывод текущей строки
+// 		while ((list = list->next));	//Переключение на новую строку	
+// 		//Если следующей строкой оказался NULL, цикл завершается
+// 	}
+// 	putchar('\n');
+// }
 
 void RemoveTopElement(TextList **list)
 {
