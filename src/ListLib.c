@@ -22,8 +22,8 @@ void RemoveTopElement(TextList **list)
 	*list = tmp;					//Подстановка следующего элемента на место старого
 }
 
-void RemoveList(TextList *list)
+void RemoveList(TextList **list)
 {
-	while (list)	//Пока указатель на список не равен NULL
-		RemoveTopElement(&list);	//Удаление верхнего элемента
+	while (*list)	//Пока указатель на список не равен NULL
+		RemoveTopElement(list);	//Удаление верхнего элемента
 }

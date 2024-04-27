@@ -46,7 +46,7 @@ int main(int argc, const char *argv[])
 			printf("Файлов, начинающихся с %c не найдено!\n", argv[1][0]);
 		break;
 	}
-	RemoveList(FileList);	//Очистка списка файлов
+	RemoveList(&FileList);	//Очистка списка файлов
 	return errCode;
 }
 
@@ -146,7 +146,7 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **pFile
 		DIR *curDir = opendir(DirList->text);
 		if (!curDir)
 		{
-			RemoveList(DirList);
+			RemoveList(&DirList);
 			return ERR_BADDIR;
 		}
 		uint8_t err = ScanDirectory(curDir, &DirList, pFileList, DesiredChar);
@@ -154,10 +154,10 @@ uint8_t FindFiles(char const *StartDir, char const DesiredChar, TextList **pFile
 
 		if (err)
 		{ // Если не удалось выделить память, возрат ошибки
-			RemoveList(DirList);
+			RemoveList(&DirList);
 			return ERR_MALLOC;
 		}
 	}
-	RemoveList(DirList);
+	RemoveList(&DirList);
 	return ERR_NO;
 }

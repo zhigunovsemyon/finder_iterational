@@ -29,5 +29,5 @@ void RemoveTopElement(TextList **list);
 
 /*Удаление всего списка list
  * !!Крайний элемент обязан указывать на NULL!! */
-void RemoveList(TextList *list);
+void RemoveList(TextList **list);
 
