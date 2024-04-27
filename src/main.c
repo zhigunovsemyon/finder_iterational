@@ -4,6 +4,8 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
+#include "ListLib.h"
 
 #ifdef WIN32
 #define SEP "\\"
@@ -11,22 +13,37 @@
 #define SEP "/"
 #endif /* ifdef WIN32 */
 
-enum Errors
-{
-	NOERR,
-	BADCALL
-};
-
 int PrintFileLocations(char const *StartDir, char const DesiredChar);
 int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar);
 
+
+// int main(void)
+// {
+// 	TextList *kek = NULL;
+// 	char buff[64];
+// 	do
+// 	{
+// 		fgets(buff, 64, stdin);
+// 		if (PushElement(&kek, buff))
+// 		{
+// 			RemoveList(kek);
+// 			return ERR_MALLOC;
+// 		}
+//
+// 	} while (buff[0] != '\n');
+//
+// 	PrintList(kek);
+// 	RemoveList(kek);
+// 	return ERR_NO;
+// }
 int main(int argc, const char *argv[])
 {
+	
 	// Если было переданно недостаточно аргументов, работу можно сразу прекратить
 	if (argc < 3)
 	{
 		fprintf(stderr, "Укажите, файлы с какого символа и в какой папке вы хотите искать!\n");
-		return BADCALL;
+		return ERR_BADCALL;
 	}
 
 	char DesChar = argv[1][0]; // Искомый символ
@@ -39,14 +56,24 @@ int main(int argc, const char *argv[])
 	else
 		printf("Файлов, начинающихся с %c не найдено!\n", DesChar);
 
-	return NOERR;
+	return ERR_NO;
 }
+
+//void FindFiles(struct FileList* Folders, struct FileList* Files, char const* StartDir, char const DesiredChar)
+//{
+//	while ()
+//	{
+//		DIR *folder = opendir(S)
+//	}
+//}
 
 /*Функция ищет в файлы, начинающиеся с DesiredChar, в папке с названием StartDir*/
 int PrintFileLocations(char const *StartDir, char const DesiredChar)
 {
 	// Запуск внутренней функции со счётчиком
 	return InnerPrintFileLocations(0, StartDir, DesiredChar);
+
+
 }
 
 int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredChar)
@@ -59,27 +86,27 @@ int InnerPrintFileLocations(int count, char const *StartDir, char const DesiredC
 
 	struct dirent *ep;
 	// Цикл перебирает элементы данной папки
-	while (ep = readdir(dp))
+	while ((ep = readdir(dp)))
 	{
 		// Если у элемента название .. или . , то он игнорируется
 		if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0)
 			continue;
-
-		// Проверка каждого элемента из папки и, если его первый символ
-		// совпал с DesiredChar, при этом элемент не является другой папкой
-		// - вывод его пути и увеличение счётчика
-		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
-		{
-			printf("%s%s%s\n", StartDir, SEP, ep->d_name);
-			count++;
-			continue;
-		}
 
 		// Выделение памяти под путь к очередному файлу, сохранение его имени
 		char *newDir = (char *)malloc(sizeof(char) * (strlen(StartDir) + strlen(ep->d_name) + 2));
 		strcpy(newDir, StartDir);
 		strcat(newDir, SEP);
 		strcat(newDir, ep->d_name);
+
+		// Проверка каждого элемента из папки и, если его первый символ
+		// совпал с DesiredChar, при этом элемент не является другой папкой
+		// - вывод его пути и увеличение счётчика
+		if (DT_DIR != ep->d_type && DesiredChar == ep->d_name[0])
+		{
+			printf("%s\n", newDir);
+			count++;
+			continue;
+		}
 
 		// Открытие очередного файла
 		count = InnerPrintFileLocations(count, newDir, DesiredChar);

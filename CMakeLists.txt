@@ -18,4 +18,4 @@ if (WIN32)
 	include_directories(${DIRENT_DIR}/include)
 endif()
 
-add_executable (${PROJECT_NAME} "src/main.c")
+add_executable (${PROJECT_NAME} "src/main.c;src/ListLib.c")
