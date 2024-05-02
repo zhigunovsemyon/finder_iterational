@@ -70,7 +70,7 @@ uint16_t PrintAndCountList(TextList *list)
  * сохраняет их по указателю pFileList на список файлов, сохраняет новые папки по указателю pDirList на список*/
 uint8_t ScanDirectory(DIR *curDir, TextList **pDirList, TextList **pFileList, char const DesiredChar)
 {
-	uint8_t err;
+	uint8_t err = ERR_NO;
 	//Сохранение названия текущей папки и удаление её из списка
 	char *curDirName = (char *) malloc(sizeof(char) * (1 + strlen((*pDirList)->text)));
 	if (!curDirName)
